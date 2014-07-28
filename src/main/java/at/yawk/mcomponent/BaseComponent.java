@@ -1,13 +1,16 @@
 package at.yawk.mcomponent;
 
+import at.yawk.mcomponent.action.Event;
 import at.yawk.mcomponent.style.Style;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author yawkat
@@ -16,15 +19,17 @@ public class BaseComponent implements Component {
     private final ComponentValue value;
     private final List<Component> children;
     private final Style style;
+    private final Set<Event> events;
 
-    public BaseComponent(ComponentValue value, List<Component> children, Style style) {
+    public BaseComponent(ComponentValue value, List<Component> children, Style style, Set<Event> events) {
         this.value = value;
+        this.events = ImmutableSet.copyOf(events);
         this.children = ImmutableList.copyOf(children);
         this.style = style;
     }
 
     public BaseComponent(ComponentValue value, List<Component> children) {
-        this(value, children, Style.INHERIT);
+        this(value, children, Style.INHERIT, Collections.emptySet());
     }
 
     public BaseComponent(ComponentValue value) {
@@ -53,14 +58,15 @@ public class BaseComponent implements Component {
             object.add("extra", childArray);
         }
         style.applyToJson(object);
+        events.forEach(event -> event.applyToJson(object));
         return object;
     }
 
     @Override
     public Component minify() {
         if (children.isEmpty()
-                && value instanceof StringComponentValue
-                && style.equals(Style.INHERIT)) {
+            && value instanceof StringComponentValue
+            && style.equals(Style.INHERIT)) {
             return new StringComponent(((StringComponentValue) value).getValue());
         }
         return this;
@@ -78,6 +84,9 @@ public class BaseComponent implements Component {
             }
             writer.endArray();
         }
+        for (Event event : events) {
+            event.write(writer);
+        }
         writer.endObject();
     }
 
@@ -92,6 +101,9 @@ public class BaseComponent implements Component {
 
         BaseComponent that = (BaseComponent) o;
 
+        if (!events.equals(that.events)) {
+            return false;
+        }
         if (!children.equals(that.children)) {
             return false;
         }
@@ -110,6 +122,7 @@ public class BaseComponent implements Component {
         int result = value.hashCode();
         result = 31 * result + children.hashCode();
         result = 31 * result + style.hashCode();
+        result = 31 * result + events.hashCode();
         return result;
     }
 }

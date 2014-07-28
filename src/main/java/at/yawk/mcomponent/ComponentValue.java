@@ -6,7 +6,7 @@ import com.google.gson.JsonObject;
  * @author yawkat
  */
 public interface ComponentValue extends JsonSerializable {
-    public static ComponentValue EMPTY = new StringComponent("");
+    public static ComponentValue EMPTY = new StringComponentValue("");
 
     void applyToJson(JsonObject target);
 }
