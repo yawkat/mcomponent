@@ -1,10 +1,9 @@
 package at.yawk.mcomponent;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * @author yawkat
@@ -23,6 +22,19 @@ public class StringComponentValue implements ComponentValue {
     @Override
     public void applyToJson(JsonObject target) {
         target.addProperty("text", getValue());
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return value.isEmpty();
+    }
+
+    @Override
+    public Optional<ComponentValue> tryJoin(ComponentValue other) {
+        if (other instanceof StringComponentValue) {
+            return Optional.of(new StringComponentValue(getValue() + ((StringComponentValue) other).getValue()));
+        }
+        return Optional.empty();
     }
 
     @Override

@@ -1,72 +1,94 @@
 package at.yawk.mcomponent.style;
 
 import at.yawk.mcomponent.JsonSerializable;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import java.util.*;
 
 /**
  * @author yawkat
  */
 public class Style implements JsonSerializable {
+    public static final Style DEFAULT;
     public static final Style INHERIT = new Style(Color.INHERIT);
 
-    private final FlagValue bold;
-    private final FlagValue italic;
-    private final FlagValue underline;
-    private final FlagValue strikethrough;
-    private final FlagValue obfuscated;
+    private final Map<FlagKey, FlagValue> flags;
     private final Color color;
 
-    public Style(FlagValue bold,
-                 FlagValue italic,
-                 FlagValue underline,
-                 FlagValue strikethrough,
-                 FlagValue obfuscated,
-                 Color color) {
-        this.bold = bold;
-        this.italic = italic;
-        this.underline = underline;
-        this.strikethrough = strikethrough;
-        this.obfuscated = obfuscated;
+    static {
+        Map<FlagKey, FlagValue> flags = new EnumMap<>(FlagKey.class);
+        Arrays.stream(FlagKey.values()).forEach(k -> flags.put(k, FlagValue.INHERIT));
+        DEFAULT = new Style(flags, Color.WHITE);
+    }
+
+    public Style(Map<FlagKey, FlagValue> flags, Color color) {
+        this.flags = ImmutableMap.copyOf(flags);
         this.color = color;
     }
 
     public Style(Color color) {
-        this(FlagValue.INHERIT,
-             FlagValue.INHERIT,
-             FlagValue.INHERIT,
-             FlagValue.INHERIT,
-             FlagValue.INHERIT,
-             color);
+        this(Collections.emptyMap(), color);
+    }
+
+    public boolean hasChangesFromParent(Style parent) {
+        if (color != Color.INHERIT && color != parent.color) {
+            return true;
+        }
+        for (FlagKey key : FlagKey.values()) {
+            FlagValue ours = getFlag(key);
+            if (ours != FlagValue.INHERIT) {
+                FlagValue theirs = parent.getFlag(key);
+                if (ours != theirs) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public Style subtractParent(Style parent) {
+        Color color = this.color == parent.color ? Color.INHERIT : this.color;
+        Map<FlagKey, FlagValue> flags = Maps.newEnumMap(this.flags);
+        for (Iterator<Map.Entry<FlagKey, FlagValue>> iterator = flags.entrySet().iterator(); iterator.hasNext(); ) {
+            Map.Entry<FlagKey, FlagValue> entry = iterator.next();
+            if (parent.getFlag(entry.getKey()) == entry.getValue()) {
+                iterator.remove();
+            }
+        }
+        return new Style(flags, color);
+    }
+
+    public Style addParent(Style parent) {
+        Color color = this.color == Color.INHERIT ? parent.color : this.color;
+        Map<FlagKey, FlagValue> flags = Maps.newEnumMap(parent.flags);
+        this.flags.forEach((k, v) -> v.getValue().ifPresent(b -> flags.put(k, v)));
+        return new Style(flags, color);
+    }
+
+    public FlagValue getFlag(FlagKey key) {
+        return flags.getOrDefault(key, FlagValue.INHERIT);
     }
 
     public void applyToJson(JsonObject object) {
-        bold.getValue().ifPresent(fl -> object.addProperty("bold", fl));
-        italic.getValue().ifPresent(fl -> object.addProperty("italic", fl));
-        underline.getValue().ifPresent(fl -> object.addProperty("underline", fl));
-        strikethrough.getValue().ifPresent(fl -> object.addProperty("strikethrough", fl));
-        obfuscated.getValue().ifPresent(fl -> object.addProperty("obfuscated", fl));
+        flags.forEach((k, v) -> v.getValue().ifPresent(b -> object.addProperty(k.getKey(), b)));
         color.getName().ifPresent(name -> object.addProperty("color", name));
     }
 
     @Override
     public void write(JsonWriter writer) throws IOException {
-        writeIfPresent(writer, "bold", bold);
-        writeIfPresent(writer, "italic", italic);
-        writeIfPresent(writer, "underline", underline);
-        writeIfPresent(writer, "strikethrough", strikethrough);
-        writeIfPresent(writer, "obfuscated", obfuscated);
+        //noinspection Convert2streamapi
+        for (Map.Entry<FlagKey, FlagValue> entry : flags.entrySet()) {
+            if (entry.getValue().getValue().isPresent()) {
+                writer.name(entry.getKey().getKey());
+                writer.value(entry.getValue().getValue().get());
+            }
+        }
         if (color.getName().isPresent()) {
             writer.name("color");
             writer.value(color.getName().get());
-        }
-    }
-
-    private static void writeIfPresent(JsonWriter writer, String name, FlagValue value) throws IOException {
-        if (value.getValue().isPresent()) {
-            writer.name(name);
-            writer.value(value.getValue().get());
         }
     }
 
@@ -81,23 +103,16 @@ public class Style implements JsonSerializable {
 
         Style style = (Style) o;
 
-        if (bold != style.bold) {
-            return false;
-        }
         if (color != style.color) {
             return false;
         }
-        if (italic != style.italic) {
+        if (!flags.equals(style.flags)) {
             return false;
         }
-        if (obfuscated != style.obfuscated) {
-            return false;
-        }
-        if (strikethrough != style.strikethrough) {
-            return false;
-        }
-        if (underline != style.underline) {
-            return false;
+        for (FlagKey key : FlagKey.values()) {
+            if (getFlag(key) != style.getFlag(key)) {
+                return false;
+            }
         }
 
         return true;
@@ -105,11 +120,10 @@ public class Style implements JsonSerializable {
 
     @Override
     public int hashCode() {
-        int result = bold.hashCode();
-        result = 31 * result + italic.hashCode();
-        result = 31 * result + underline.hashCode();
-        result = 31 * result + strikethrough.hashCode();
-        result = 31 * result + obfuscated.hashCode();
+        int result = 0;
+        for (FlagKey key : FlagKey.values()) {
+            result = 31 * result + getFlag(key).hashCode();
+        }
         result = 31 * result + color.hashCode();
         return result;
     }

@@ -31,6 +31,11 @@ public class StringComponent implements Component {
     }
 
     @Override
+    public boolean isEmpty() {
+        return value.isEmpty();
+    }
+
+    @Override
     public void write(JsonWriter writer) throws IOException {
         writer.value(getValue());
     }

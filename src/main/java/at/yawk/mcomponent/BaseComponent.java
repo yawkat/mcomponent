@@ -10,16 +10,21 @@ import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * @author yawkat
  */
 public class BaseComponent implements Component {
-    private final ComponentValue value;
-    private final List<Component> children;
-    private final Style style;
-    private final Set<Event> events;
+    // mutable for internal use in ComponentMinimizer
+
+    ComponentValue value;
+    List<Component> children;
+    Style style;
+    Set<Event> events;
+
+    BaseComponent() {}
 
     public BaseComponent(ComponentValue value, List<Component> children, Style style, Set<Event> events) {
         this.value = value;
@@ -41,11 +46,15 @@ public class BaseComponent implements Component {
     }
 
     public List<Component> getChildren() {
-        return children;
+        return Collections.unmodifiableList(children);
     }
 
     public Style getStyle() {
         return style;
+    }
+
+    public Set<Event> getEvents() {
+        return Collections.unmodifiableSet(events);
     }
 
     @Override
@@ -66,10 +75,32 @@ public class BaseComponent implements Component {
     public Component minify() {
         if (children.isEmpty()
             && value instanceof StringComponentValue
-            && style.equals(Style.INHERIT)) {
+            && style.equals(Style.INHERIT)
+            && events.isEmpty()) {
             return new StringComponent(((StringComponentValue) value).getValue());
         }
         return this;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return value.isEmpty();
+    }
+
+    @Override
+    public Optional<Component> tryJoin(Component other) {
+        if (other instanceof BaseComponent) {
+            if (style.equals(((BaseComponent) other).getStyle()) &&
+                children.isEmpty() &&
+                ((BaseComponent) other).getChildren().isEmpty() &&
+                events.equals(((BaseComponent) other).getEvents())) {
+                Optional<ComponentValue> value = getValue().tryJoin(((BaseComponent) other).getValue());
+                if (value.isPresent()) {
+                    return Optional.of(new BaseComponent(value.get(), Collections.emptyList(), style, events));
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     @Override
