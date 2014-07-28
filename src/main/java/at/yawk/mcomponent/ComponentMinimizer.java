@@ -26,6 +26,7 @@ class ComponentMinimizer {
         while (independentPass(component)) {
             modified = true;
         }
+        modified |= passEscalateFirstDeep(component);
         if (modified) {
             passInheritStyleDeep(baseStyle, component);
             return true;
@@ -138,6 +139,37 @@ class ComponentMinimizer {
             }
         }
         return modified;
+    }
+
+    private boolean passEscalateFirstDeep(BaseComponent component) {
+        component.children.parallelStream()
+                .filter(c -> c instanceof BaseComponent)
+                .forEach(c -> passEscalateFirstDeep((BaseComponent) c));
+        if (!component.children.isEmpty() && component.value.isEmpty()) {
+            Component first = component.children.remove(0);
+            if (first instanceof StringComponent ||
+                first instanceof BaseComponent && ((BaseComponent) first).events.isEmpty()) {
+                Style joined = getStyle(first).addParent(component.style);
+                for (int i = 0; i < component.children.size(); i++) {
+                    Component child = component.children.get(i);
+                    Style current = getStyle(child);
+                    Style inherited = current.addParent(component.style);
+                    Style difference = inherited.subtractParent(joined);
+                    component.children.set(i, child.withStyle(difference));
+                }
+                component.style = joined;
+                if (first instanceof StringComponent) {
+                    component.value = new StringComponentValue(((StringComponent) first).getValue());
+                } else {
+                    component.value = ((BaseComponent) first).value;
+                }
+            }
+        }
+        return false;
+    }
+
+    private Style getStyle(Component component) {
+        return component instanceof BaseComponent ? ((BaseComponent) component).style : Style.INHERIT;
     }
 
     private Component minify(Component component) {

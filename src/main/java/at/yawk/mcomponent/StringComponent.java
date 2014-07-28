@@ -1,7 +1,7 @@
 package at.yawk.mcomponent;
 
+import at.yawk.mcomponent.style.Style;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
@@ -42,6 +42,11 @@ public class StringComponent implements Component {
             return Optional.of(new StringComponent(this.value + ((StringComponent) other).value));
         }
         return Optional.empty();
+    }
+
+    @Override
+    public Component withStyle(Style style) {
+        return style.equals(Style.INHERIT) ? this : new BaseComponent(new StringComponentValue(this.value), style);
     }
 
     @Override

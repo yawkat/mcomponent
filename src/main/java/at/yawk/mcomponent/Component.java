@@ -1,5 +1,6 @@
 package at.yawk.mcomponent;
 
+import at.yawk.mcomponent.style.Style;
 import com.google.gson.JsonElement;
 import java.util.Optional;
 
@@ -14,4 +15,6 @@ public interface Component extends JsonSerializable {
     boolean isEmpty();
 
     Optional<Component> tryJoin(Component other);
+
+    Component withStyle(Style style);
 }

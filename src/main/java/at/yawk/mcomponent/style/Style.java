@@ -63,6 +63,9 @@ public class Style implements JsonSerializable {
         return false;
     }
 
+    /**
+     * Return a style that has all properties the parent shares with this style removed.
+     */
     public Style subtractParent(Style parent) {
         Color color = this.color == parent.color ? Color.INHERIT : this.color;
         Map<FlagKey, FlagValue> flags = Maps.newEnumMap(FlagKey.class);
@@ -76,11 +79,32 @@ public class Style implements JsonSerializable {
         return create(Collections.unmodifiableMap(flags), color);
     }
 
+    /**
+     * Return a style that has all the inherited properties replaced by the parents properties.
+     */
     public Style addParent(Style parent) {
         Color color = this.color == Color.INHERIT ? parent.color : this.color;
         Map<FlagKey, FlagValue> flags = Maps.newEnumMap(FlagKey.class);
         flags.putAll(parent.flags);
         this.flags.forEach((k, v) -> v.getValue().ifPresent(b -> flags.put(k, v)));
+        return create(Collections.unmodifiableMap(flags), color);
+    }
+
+    /**
+     * Get a style that contains all common attributes this style and the given style share.
+     */
+    public Style getCommon(Style other) {
+        Map<FlagKey, FlagValue> flags = Maps.newEnumMap(FlagKey.class);
+        for (FlagKey key : FlagKey.values()) {
+            FlagValue flag = getFlag(key);
+            if (flag != FlagValue.INHERIT && flag == other.getFlag(key)) {
+                flags.put(key, flag);
+            }
+        }
+        Color color = this.color;
+        if (other.color != color) {
+            color = Color.INHERIT;
+        }
         return create(Collections.unmodifiableMap(flags), color);
     }
 

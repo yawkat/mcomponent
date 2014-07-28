@@ -108,6 +108,16 @@ public class BaseComponent implements Component {
     }
 
     @Override
+    public Component withStyle(Style style) {
+        BaseComponent n = new BaseComponent();
+        n.value = this.value;
+        n.children = this.children;
+        n.events = this.events;
+        n.style = style;
+        return n;
+    }
+
+    @Override
     public void write(JsonWriter writer) throws IOException {
         writer.beginObject();
         value.write(writer);
