@@ -77,4 +77,11 @@ public class TranslatableComponentValue implements ComponentValue {
         result = 31 * result + arguments.hashCode();
         return result;
     }
+
+    @Override
+    public String toString() {
+        JsonObject object = new JsonObject();
+        applyToJson(object);
+        return object.toString();
+    }
 }

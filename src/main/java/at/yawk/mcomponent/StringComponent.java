@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * @author yawkat
@@ -36,6 +37,14 @@ public class StringComponent implements Component {
     }
 
     @Override
+    public Optional<Component> tryJoin(Component other) {
+        if (other instanceof StringComponent) {
+            return Optional.of(new StringComponent(this.value + ((StringComponent) other).value));
+        }
+        return Optional.empty();
+    }
+
+    @Override
     public void write(JsonWriter writer) throws IOException {
         writer.value(getValue());
     }
@@ -61,5 +70,10 @@ public class StringComponent implements Component {
     @Override
     public int hashCode() {
         return value.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return toJson().toString();
     }
 }

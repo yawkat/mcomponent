@@ -13,11 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 class ComponentMinimizer {
     private static final Style baseStyle = Style.DEFAULT;
-    BaseComponent component;
-
-    public ComponentMinimizer(BaseComponent component) {
-        this.component = component;
-    }
+    static final ComponentMinimizer instance = new ComponentMinimizer();
 
     public BaseComponent minimize(BaseComponent component) {
         component = mutableCopy(component);

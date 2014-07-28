@@ -65,4 +65,11 @@ public class StringComponentValue implements ComponentValue {
     public int hashCode() {
         return value.hashCode();
     }
+
+    @Override
+    public String toString() {
+        JsonObject object = new JsonObject();
+        applyToJson(object);
+        return object.toString();
+    }
 }

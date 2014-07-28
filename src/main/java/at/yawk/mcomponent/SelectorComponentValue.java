@@ -51,4 +51,11 @@ public class SelectorComponentValue implements ComponentValue {
     public int hashCode() {
         return selector.hashCode();
     }
+
+    @Override
+    public String toString() {
+        JsonObject object = new JsonObject();
+        applyToJson(object);
+        return object.toString();
+    }
 }

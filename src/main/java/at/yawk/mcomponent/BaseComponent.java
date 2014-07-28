@@ -33,6 +33,10 @@ public class BaseComponent implements Component {
         this.style = style;
     }
 
+    public BaseComponent(ComponentValue value, Style style) {
+        this(value, Collections.emptyList(), style, Collections.emptySet());
+    }
+
     public BaseComponent(ComponentValue value, List<Component> children) {
         this(value, children, Style.INHERIT, Collections.emptySet());
     }
@@ -155,5 +159,10 @@ public class BaseComponent implements Component {
         result = 31 * result + style.hashCode();
         result = 31 * result + events.hashCode();
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return toJson().toString();
     }
 }
