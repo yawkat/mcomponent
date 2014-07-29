@@ -11,4 +11,11 @@ public class LegacyConverterTest {
                      "\"color\":\"red\"}",
                      LegacyConverter.convertAndMinimize("§cHi there §9§lmate§c!").toString());
     }
+
+    @Test
+    public void testLegacyConvertLink() {
+        assertEquals("{\"text\":\"\",\"extra\":[{\"text\":\"Website: \",\"bold\":true},{\"text\":\"http://yawk.at/\"," +
+                     "\"clickEvent\":{\"action\":\"open_url\",\"value\":\"http://yawk.at/\"}}],\"color\":\"blue\"}",
+                     LegacyConverter.convertAndMinimize("§9§lWebsite: §9http://yawk.at/").toString());
+    }
 }

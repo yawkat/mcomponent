@@ -90,10 +90,7 @@ public class Style implements JsonSerializable {
         return create(Collections.unmodifiableMap(flags), color);
     }
 
-    /**
-     * Get a style that contains all common attributes this style and the given style share.
-     */
-    public Style getCommon(Style other) {
+    public Style getOverridden(Style other) {
         Map<FlagKey, FlagValue> flags = Maps.newEnumMap(FlagKey.class);
         for (FlagKey key : FlagKey.values()) {
             FlagValue flag = getFlag(key);
@@ -101,10 +98,7 @@ public class Style implements JsonSerializable {
                 flags.put(key, flag);
             }
         }
-        Color color = this.color;
-        if (other.color != color) {
-            color = Color.INHERIT;
-        }
+        Color color = other.color == Color.INHERIT ? Color.INHERIT : this.color;
         return create(Collections.unmodifiableMap(flags), color);
     }
 

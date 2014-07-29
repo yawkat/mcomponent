@@ -22,11 +22,11 @@ class ComponentMinimizer {
     }
 
     private boolean pass(BaseComponent component) {
-        System.out.println("Pass " + component);
         boolean modified = false;
         while (independentPass(component)) {
             modified = true;
         }
+        modified |= passEscalateColorDeep(component);
         modified |= passEscalateFirstDeep(component);
         if (modified) {
             passInheritStyleDeep(baseStyle, component);
@@ -147,23 +147,29 @@ class ComponentMinimizer {
                 .filter(c -> c instanceof BaseComponent)
                 .forEach(c -> passEscalateFirstDeep((BaseComponent) c));
         if (!component.children.isEmpty() && component.value.isEmpty()) {
-            Component first = component.children.remove(0);
-            if (first instanceof StringComponent ||
-                first instanceof BaseComponent && ((BaseComponent) first).events.isEmpty()) {
-                Style joined = getStyle(first).addParent(component.style);
-                for (int i = 0; i < component.children.size(); i++) {
-                    Component child = component.children.get(i);
-                    Style current = getStyle(child);
-                    Style inherited = current.addParent(component.style);
-                    Style difference = inherited.subtractParent(joined);
-                    component.children.set(i, child.withStyle(difference));
-                }
-                component.style = joined;
-                if (first instanceof StringComponent) {
-                    component.value = new StringComponentValue(((StringComponent) first).getValue());
-                } else {
-                    component.value = ((BaseComponent) first).value;
-                }
+            Component first = component.children.get(0);
+            if (first instanceof StringComponent) {
+                component.children.remove(0);
+                component.value = new StringComponentValue(((StringComponent) first).getValue());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean passEscalateColorDeep(BaseComponent component) {
+        component.children.parallelStream()
+                .filter(c -> c instanceof BaseComponent)
+                .forEach(c -> passEscalateColorDeep((BaseComponent) c));
+        if (!component.children.isEmpty() && component.value.isEmpty()) {
+            Style common = getStyle(component.children.get(0));
+            for (int i = 1; i < component.children.size(); i++) {
+                common = common.getOverridden(getStyle(component.children.get(i)));
+            }
+            common = common.addParent(component.style);
+            if (!component.style.equals(common)) {
+                component.style = common;
+                return true;
             }
         }
         return false;
