@@ -22,6 +22,7 @@ class ComponentMinimizer {
     }
 
     private boolean pass(BaseComponent component) {
+        System.out.println("Pass " + component);
         boolean modified = false;
         while (independentPass(component)) {
             modified = true;

@@ -1,12 +1,17 @@
 package at.yawk.mcomponent;
 
+import at.yawk.mcomponent.action.BaseAction;
+import at.yawk.mcomponent.action.BaseEvent;
+import at.yawk.mcomponent.action.Event;
 import at.yawk.mcomponent.style.Color;
 import at.yawk.mcomponent.style.FlagKey;
 import at.yawk.mcomponent.style.FlagValue;
 import at.yawk.mcomponent.style.Style;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -67,7 +72,7 @@ public class LegacyConverter {
             if (c == '§' && sequence.length() > i + 1) {
                 char d = Character.toLowerCase(sequence.charAt(i + 1));
                 if (d < COLOR_CACHE_SIZE) {
-                    components.add(new BaseComponent(new StringComponentValue(part.toString()), style));
+                    appendStyledPart(components, part, style);
                     part.setLength(0);
 
                     Color color = COLORS[d];
@@ -87,7 +92,29 @@ public class LegacyConverter {
             }
             part.append(c);
         }
-        components.add(new BaseComponent(new StringComponentValue(part.toString()), style));
+        appendStyledPart(components, part, style);
         return new BaseComponent(ComponentValue.EMPTY, components);
+    }
+
+    private void appendStyledPart(List<Component> components, StringBuilder part, Style style) {
+        Matcher urlMatcher = URL.matcher(part);
+        int x = 0;
+        while (urlMatcher.find()) {
+            String before = part.substring(x, urlMatcher.start());
+            if (!before.isEmpty()) { // don't need to leave everything for the minifier
+                components.add(new BaseComponent(new StringComponentValue(before), style));
+            }
+            String in = urlMatcher.group();
+            Event event = new BaseEvent(BaseEvent.Type.CLICK, new BaseAction(BaseAction.Type.OPEN_URL, in));
+            components.add(new BaseComponent(new StringComponentValue(in),
+                                             Collections.emptyList(),
+                                             style,
+                                             Collections.singleton(event)));
+            x = urlMatcher.end();
+        }
+        String after = part.substring(x);
+        if (!after.isEmpty()) { // don't need to leave everything for the minifier
+            components.add(new BaseComponent(new StringComponentValue(after), style));
+        }
     }
 }

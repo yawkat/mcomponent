@@ -20,7 +20,7 @@ public class BaseEvent implements Event {
 
     private void validate() {
         switch (type) {
-        case HOVER:
+        case CLICK:
             if (action instanceof BaseAction) {
                 switch (((BaseAction) action).getType()) {
                 case OPEN_FILE:
@@ -31,7 +31,7 @@ public class BaseEvent implements Event {
                 }
             }
             break;
-        case CLICK:
+        case HOVER:
             if (action instanceof BaseAction) {
                 switch (((BaseAction) action).getType()) {
                 case SHOW_TEXT:
