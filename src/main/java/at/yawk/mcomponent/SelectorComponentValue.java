@@ -24,6 +24,11 @@ public class SelectorComponentValue implements ComponentValue {
     }
 
     @Override
+    public String toRawString() {
+        return "{" + selector + "}";
+    }
+
+    @Override
     public void write(JsonWriter writer) throws IOException {
         writer.name("selector");
         writer.value(getSelector());

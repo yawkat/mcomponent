@@ -38,6 +38,11 @@ public class StringComponentValue implements ComponentValue {
     }
 
     @Override
+    public String toRawString() {
+        return value;
+    }
+
+    @Override
     public void write(JsonWriter writer) throws IOException {
         writer.name("text");
         writer.value(getValue());

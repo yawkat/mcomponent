@@ -118,6 +118,15 @@ public class BaseComponent implements Component {
     }
 
     @Override
+    public String toRawString() {
+        StringBuilder builder = new StringBuilder(this.value.toRawString());
+        for (Component child : children) {
+            builder.append(child.toRawString());
+        }
+        return builder.toString();
+    }
+
+    @Override
     public void write(JsonWriter writer) throws IOException {
         writer.beginObject();
         value.write(writer);

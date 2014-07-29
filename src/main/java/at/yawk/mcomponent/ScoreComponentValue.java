@@ -33,6 +33,11 @@ public class ScoreComponentValue implements ComponentValue {
     }
 
     @Override
+    public String toRawString() {
+        return "{" + objective + ":" + player + "}";
+    }
+
+    @Override
     public void write(JsonWriter writer) throws IOException {
         writer.name("score");
         writer.beginObject();

@@ -50,6 +50,11 @@ public class StringComponent implements Component {
     }
 
     @Override
+    public String toRawString() {
+        return value;
+    }
+
+    @Override
     public void write(JsonWriter writer) throws IOException {
         writer.value(getValue());
     }

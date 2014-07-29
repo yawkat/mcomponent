@@ -38,6 +38,11 @@ public class TranslatableComponentValue implements ComponentValue {
     }
 
     @Override
+    public String toRawString() {
+        return "{" + key + ">" + arguments + "}";
+    }
+
+    @Override
     public void write(JsonWriter writer) throws IOException {
         writer.name("translate");
         writer.value(getKey());

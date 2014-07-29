@@ -17,4 +17,6 @@ public interface Component extends JsonSerializable {
     Optional<Component> tryJoin(Component other);
 
     Component withStyle(Style style);
+
+    String toRawString();
 }

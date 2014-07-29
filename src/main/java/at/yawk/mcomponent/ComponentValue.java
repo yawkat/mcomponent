@@ -18,4 +18,6 @@ public interface ComponentValue extends JsonSerializable {
     default Optional<ComponentValue> tryJoin(ComponentValue other) {
         return Optional.empty();
     }
+
+    String toRawString();
 }
