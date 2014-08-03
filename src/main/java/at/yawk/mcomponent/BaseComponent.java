@@ -130,6 +130,7 @@ public class BaseComponent implements Component {
     public void write(JsonWriter writer) throws IOException {
         writer.beginObject();
         value.write(writer);
+        style.write(writer);
         if (!children.isEmpty()) {
             writer.name("extra");
             writer.beginArray();
