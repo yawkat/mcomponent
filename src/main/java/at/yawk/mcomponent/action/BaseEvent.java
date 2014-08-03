@@ -18,6 +18,14 @@ public class BaseEvent implements Event {
         validate();
     }
 
+    public Type getType() {
+        return type;
+    }
+
+    public Action getAction() {
+        return action;
+    }
+
     private void validate() {
         switch (type) {
         case CLICK:
