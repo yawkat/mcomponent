@@ -1,5 +1,6 @@
 package at.yawk.mcomponent.action;
 
+import at.yawk.mcomponent.StringComponent;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
@@ -15,7 +16,8 @@ public class BaseEvent implements Event {
         this.type = type;
         this.action = action;
 
-        validate();
+        validateActionType();
+        validateActionValue();
     }
 
     public Type getType() {
@@ -26,7 +28,7 @@ public class BaseEvent implements Event {
         return action;
     }
 
-    private void validate() {
+    private void validateActionType() {
         switch (type) {
         case CLICK:
             if (action instanceof BaseAction) {
@@ -58,6 +60,13 @@ public class BaseEvent implements Event {
             }
         }
         throw new IllegalArgumentException(type + " does not allow action " + action);
+    }
+
+    private void validateActionValue() {
+        if (type != Type.HOVER &&
+            !(action instanceof BaseAction && ((BaseAction) action).getValue() instanceof StringComponent)) {
+            throw new IllegalArgumentException("Only HOVER supports non-string component values!");
+        }
     }
 
     @Override
