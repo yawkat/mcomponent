@@ -117,6 +117,10 @@ public class Style implements JsonSerializable {
         return create(Collections.unmodifiableMap(flags), color);
     }
 
+    public Color getColor() {
+        return color;
+    }
+
     public Style withColor(Color color) {
         return create(this.flags, color);
     }
