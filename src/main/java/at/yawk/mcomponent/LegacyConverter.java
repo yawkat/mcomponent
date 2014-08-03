@@ -110,7 +110,8 @@ public class LegacyConverter {
             if (urlMatcher.group(1) == null) {
                 url = "http://" + url;
             }
-            Event event = new BaseEvent(BaseEvent.Type.CLICK, new BaseAction(BaseAction.Type.OPEN_URL, url));
+            Event event = new BaseEvent(BaseEvent.Type.CLICK, new BaseAction(BaseAction.Type.OPEN_URL,
+                                                                             new StringComponent(url)));
             components.add(new BaseComponent(new StringComponentValue(in),
                                              Collections.emptyList(),
                                              style,
