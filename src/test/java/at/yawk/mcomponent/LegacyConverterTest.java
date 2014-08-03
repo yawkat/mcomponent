@@ -14,8 +14,8 @@ public class LegacyConverterTest {
 
     @Test
     public void testLegacyConvertLink() {
-        assertEquals("{\"text\":\"\",\"extra\":[{\"text\":\"Website: \",\"bold\":true},{\"text\":\"http://yawk.at/\"," +
-                     "\"clickEvent\":{\"action\":\"open_url\",\"value\":\"http://yawk.at/\"}}],\"color\":\"blue\"}",
-                     LegacyConverter.convertAndMinimize("§9§lWebsite: §9http://yawk.at/").toString());
+        assertEquals("{\"text\":\"\",\"extra\":[{\"text\":\"Website: \",\"bold\":true},{\"text\":\"yawk.at\"," +
+                     "\"clickEvent\":{\"action\":\"open_url\",\"value\":\"http://yawk.at\"}}],\"color\":\"blue\"}",
+                     LegacyConverter.convertAndMinimize("§9§lWebsite: §9yawk.at").toString());
     }
 }

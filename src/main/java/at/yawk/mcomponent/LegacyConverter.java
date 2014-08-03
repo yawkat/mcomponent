@@ -19,7 +19,8 @@ import java.util.regex.Pattern;
  */
 public class LegacyConverter {
     private static final int COLOR_CACHE_SIZE = 'r' + 1;
-    private static final Pattern URL = Pattern.compile("https?://\\S+[^\\s\\.\"']");
+    private static final Pattern URL = Pattern.compile( // lol regex
+            "(https?://)?(([0-9]{1,3}\\.){3}[0-9]{1,3}|\\w+\\.\\w{2,8})(\\S+[^\\s\\.\"'])?");
     private static final Color[] COLORS = new Color[COLOR_CACHE_SIZE];
     private static final LegacyConverter instance = new LegacyConverter();
 
@@ -105,7 +106,11 @@ public class LegacyConverter {
                 components.add(new BaseComponent(new StringComponentValue(before), style));
             }
             String in = urlMatcher.group();
-            Event event = new BaseEvent(BaseEvent.Type.CLICK, new BaseAction(BaseAction.Type.OPEN_URL, in));
+            String url = in;
+            if (urlMatcher.group(1) == null) {
+                url = "http://" + url;
+            }
+            Event event = new BaseEvent(BaseEvent.Type.CLICK, new BaseAction(BaseAction.Type.OPEN_URL, url));
             components.add(new BaseComponent(new StringComponentValue(in),
                                              Collections.emptyList(),
                                              style,
