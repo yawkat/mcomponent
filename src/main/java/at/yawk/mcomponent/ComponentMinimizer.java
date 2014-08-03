@@ -1,9 +1,14 @@
 package at.yawk.mcomponent;
 
+import at.yawk.mcomponent.action.Action;
+import at.yawk.mcomponent.action.BaseAction;
+import at.yawk.mcomponent.action.BaseEvent;
+import at.yawk.mcomponent.action.Event;
 import at.yawk.mcomponent.style.Style;
 import at.yawk.mcomponent.style.StyleOperations;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -54,6 +59,7 @@ class ComponentMinimizer {
         modified |= passStringFlatten(component);
         modified |= passRemoveEmpty(component.children);
         modified |= passJoin(component.children);
+        modified |= passOptimizeActions(component);
         return modified;
     }
 
@@ -138,6 +144,29 @@ class ComponentMinimizer {
             if (component.isEmpty()) {
                 modified = true;
                 iterator.remove();
+            }
+        }
+        return modified;
+    }
+
+    private boolean passOptimizeActions(BaseComponent component) {
+        boolean modified = false;
+        for (Event event : new ArrayList<>(component.events)) {
+            if (event instanceof BaseEvent) {
+                Action action = ((BaseEvent) event).getAction();
+                if (action instanceof BaseAction) {
+                    Component val = ((BaseAction) action).getValue();
+                    if (val instanceof BaseComponent) {
+                        BaseComponent minimized = minimize((BaseComponent) val);
+                        if (!minimized.equals(val)) {
+                            component.events.remove(event);
+                            component.events.add(new BaseEvent(((BaseEvent) event).getType(),
+                                                               new BaseAction(((BaseAction) action).getType(),
+                                                                              minimized)));
+                            modified = true;
+                        }
+                    }
+                }
             }
         }
         return modified;

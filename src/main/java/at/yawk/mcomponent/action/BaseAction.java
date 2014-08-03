@@ -1,13 +1,15 @@
 package at.yawk.mcomponent.action;
 
+import at.yawk.mcomponent.Component;
+
 /**
  * @author yawkat
  */
 public class BaseAction implements Action {
     private final Type type;
-    private final String value;
+    private final Component value;
 
-    public BaseAction(Type type, String value) {
+    public BaseAction(Type type, Component value) {
         this.type = type;
         this.value = value;
     }
@@ -16,7 +18,7 @@ public class BaseAction implements Action {
         return type;
     }
 
-    public String getValue() {
+    public Component getValue() {
         return value;
     }
 
