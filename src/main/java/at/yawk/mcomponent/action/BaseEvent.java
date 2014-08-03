@@ -63,11 +63,11 @@ public class BaseEvent implements Event {
     @Override
     public void applyToJson(JsonObject target) {
         if (type == Type.SHIFT_CLICK) {
-            target.addProperty("insertion", ((BaseAction) action).getValue());
+            target.add("insertion", ((BaseAction) action).getValue().toJson());
         } else {
             JsonObject object = new JsonObject();
             object.addProperty("action", ((BaseAction) action).getType().getId());
-            object.addProperty("value", ((BaseAction) action).getValue());
+            object.add("value", ((BaseAction) action).getValue().toJson());
             target.add(type == Type.HOVER ? "hoverEvent" : "clickEvent", object);
         }
     }
@@ -76,15 +76,16 @@ public class BaseEvent implements Event {
     public void write(JsonWriter writer) throws IOException {
         if (type == Type.SHIFT_CLICK) {
             writer.name("insertion");
-            writer.value(((BaseAction) action).getValue());
+            ((BaseAction) action).getValue().write(writer);
         } else {
             writer.name(type == Type.HOVER ? "hoverEvent" : "clickEvent");
             writer.beginObject();
             writer.name("action");
             writer.value(((BaseAction) action).getType().getId());
             writer.name("value");
-            writer.value(((BaseAction) action).getValue());
+            ((BaseAction) action).getValue().write(writer);
             writer.endObject();
+
         }
     }
 
