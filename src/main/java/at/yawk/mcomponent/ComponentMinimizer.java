@@ -1,6 +1,7 @@
 package at.yawk.mcomponent;
 
 import at.yawk.mcomponent.style.Style;
+import at.yawk.mcomponent.style.StyleOperations;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import java.util.Iterator;
@@ -79,14 +80,14 @@ class ComponentMinimizer {
     }
 
     private boolean passInheritStyleDeep(Style parent, BaseComponent component) {
-        Style newStyle = component.style.subtractParent(parent);
+        Style newStyle = StyleOperations.removeMatching(component.style, parent);
         boolean modified = !component.style.equals(newStyle);
         component.style = newStyle;
         Style combined = null;
         for (Component child : component.children) {
             if (child instanceof BaseComponent) {
                 if (combined == null) {
-                    combined = component.style.addParent(parent);
+                    combined = StyleOperations.inherit(component.style, parent);
                 }
                 modified |= passInheritStyleDeep(combined, (BaseComponent) child);
             }
@@ -164,9 +165,9 @@ class ComponentMinimizer {
         if (!component.children.isEmpty() && component.value.isEmpty()) {
             Style common = getStyle(component.children.get(0));
             for (int i = 1; i < component.children.size(); i++) {
-                common = common.getOverridden(getStyle(component.children.get(i)));
+                common = StyleOperations.overridden(getStyle(component.children.get(i)), common);
             }
-            common = common.addParent(component.style);
+            common = StyleOperations.inherit(common, component.style);
             if (!component.style.equals(common)) {
                 component.style = common;
                 return true;

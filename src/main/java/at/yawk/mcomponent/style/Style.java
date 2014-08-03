@@ -16,8 +16,8 @@ public class Style implements JsonSerializable {
     public static final Style INHERIT = new Style(Color.INHERIT);
 
     // mutable for internal building
-    private Map<FlagKey, FlagValue> flags;
-    private Color color;
+    Map<FlagKey, FlagValue> flags;
+    Color color;
 
     static {
         Map<FlagKey, FlagValue> flags = new EnumMap<>(FlagKey.class);
@@ -45,61 +45,6 @@ public class Style implements JsonSerializable {
     public Style(Color color) {
         this.flags = Collections.emptyMap();
         this.color = color;
-    }
-
-    public boolean hasChangesFromParent(Style parent) {
-        if (color != Color.INHERIT && color != parent.color) {
-            return true;
-        }
-        for (FlagKey key : FlagKey.values()) {
-            FlagValue ours = getFlag(key);
-            if (ours != FlagValue.INHERIT) {
-                FlagValue theirs = parent.getFlag(key);
-                if (ours != theirs) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Return a style that has all properties the parent shares with this style removed.
-     */
-    public Style subtractParent(Style parent) {
-        Color color = this.color == parent.color ? Color.INHERIT : this.color;
-        Map<FlagKey, FlagValue> flags = Maps.newEnumMap(FlagKey.class);
-        flags.putAll(this.flags);
-        for (Iterator<Map.Entry<FlagKey, FlagValue>> iterator = flags.entrySet().iterator(); iterator.hasNext(); ) {
-            Map.Entry<FlagKey, FlagValue> entry = iterator.next();
-            if (parent.getFlag(entry.getKey()) == entry.getValue()) {
-                iterator.remove();
-            }
-        }
-        return create(Collections.unmodifiableMap(flags), color);
-    }
-
-    /**
-     * Return a style that has all the inherited properties replaced by the parents properties.
-     */
-    public Style addParent(Style parent) {
-        Color color = this.color == Color.INHERIT ? parent.color : this.color;
-        Map<FlagKey, FlagValue> flags = Maps.newEnumMap(FlagKey.class);
-        flags.putAll(parent.flags);
-        this.flags.forEach((k, v) -> v.getValue().ifPresent(b -> flags.put(k, v)));
-        return create(Collections.unmodifiableMap(flags), color);
-    }
-
-    public Style getOverridden(Style other) {
-        Map<FlagKey, FlagValue> flags = Maps.newEnumMap(FlagKey.class);
-        for (FlagKey key : FlagKey.values()) {
-            FlagValue flag = getFlag(key);
-            if (flag != FlagValue.INHERIT && flag == other.getFlag(key)) {
-                flags.put(key, flag);
-            }
-        }
-        Color color = other.color == Color.INHERIT ? Color.INHERIT : this.color;
-        return create(Collections.unmodifiableMap(flags), color);
     }
 
     public FlagValue getFlag(FlagKey key) {
