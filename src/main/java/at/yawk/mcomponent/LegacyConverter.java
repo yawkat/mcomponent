@@ -97,6 +97,10 @@ public class LegacyConverter {
         return new BaseComponent(ComponentValue.EMPTY, components);
     }
 
+    public static Color getColorForCode(char code) {
+        return code < COLOR_CACHE_SIZE ? COLORS[code] : null;
+    }
+
     private void appendStyledPart(List<Component> components, StringBuilder part, Style style) {
         Matcher urlMatcher = URL.matcher(part);
         int x = 0;
