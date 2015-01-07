@@ -3,14 +3,8 @@ package at.yawk.mcomponent;
 import at.yawk.mcomponent.action.BaseAction;
 import at.yawk.mcomponent.action.BaseEvent;
 import at.yawk.mcomponent.action.Event;
-import at.yawk.mcomponent.style.Color;
-import at.yawk.mcomponent.style.FlagKey;
-import at.yawk.mcomponent.style.FlagValue;
-import at.yawk.mcomponent.style.Style;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import at.yawk.mcomponent.style.*;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,6 +16,8 @@ public class LegacyConverter {
     private static final Pattern URL = Pattern.compile( // lol regex
             "(https?://)?(([0-9]{1,3}\\.){3}[0-9]{1,3}|\\w+\\.\\w{2,8})(\\S+[^\\s\\.\"'])?");
     private static final Color[] COLORS = new Color[COLOR_CACHE_SIZE];
+    private static final char[] COLORS_REVERSE = new char[Color.values().length];
+    private static final char[] FLAGS_REVERSE = new char[FlagKey.values().length];
     private static final LegacyConverter instance = new LegacyConverter();
 
     static {
@@ -47,6 +43,17 @@ public class LegacyConverter {
         COLORS['n'] = Color.UNDERLINE;
         COLORS['o'] = Color.ITALIC;
         COLORS['r'] = Color.RESET;
+
+        for (char c = 0; c < COLORS.length; c++) {
+            if (COLORS[c] != null) {
+                COLORS_REVERSE[COLORS[c].ordinal()] = c;
+            }
+        }
+        FLAGS_REVERSE[FlagKey.OBFUSCATED.ordinal()] = 'k';
+        FLAGS_REVERSE[FlagKey.BOLD.ordinal()] = 'l';
+        FLAGS_REVERSE[FlagKey.STRIKETHROUGH.ordinal()] = 'm';
+        FLAGS_REVERSE[FlagKey.UNDERLINE.ordinal()] = 'n';
+        FLAGS_REVERSE[FlagKey.ITALIC.ordinal()] = 'o';
     }
 
     private LegacyConverter() {}
@@ -126,5 +133,62 @@ public class LegacyConverter {
         if (!after.isEmpty()) { // don't need to leave everything for the minifier
             components.add(new BaseComponent(new StringComponentValue(after), style));
         }
+    }
+
+    public static String toLegacyString(Component component) {
+        StringBuilder builder = new StringBuilder();
+        Style style = Style.DEFAULT;
+        instance.toLegacy(component, style, builder);
+        return builder.toString();
+    }
+
+    private Style toLegacy(Component component, Style currentStyle, StringBuilder target) {
+        if (component instanceof StringComponent) {
+            target.append(((StringComponent) component).getValue());
+            return currentStyle;
+        }
+        if (!(component instanceof BaseComponent)) { return currentStyle; }
+        BaseComponent bc = (BaseComponent) component;
+        Style changed = StyleOperations.removeMatching(bc.getStyle(), currentStyle);
+
+        boolean reset = changed.getColor() != Color.INHERIT;
+        if (!reset) {
+            for (FlagKey key : FlagKey.values()) {
+                reset = changed.getFlag(key) == FlagValue.FALSE;
+                if (reset) { break; }
+            }
+        }
+
+        Color newColor;
+        Map<FlagKey, FlagValue> flags = new EnumMap<>(FlagKey.class);
+
+        if (reset) {
+            newColor = changed.getColor();
+            target.append('§').append(COLORS_REVERSE[newColor.ordinal()]);
+        } else {
+            newColor = currentStyle.getColor();
+        }
+        for (FlagKey flagKey : FlagKey.values()) {
+            FlagValue value = changed.getFlag(flagKey);
+            if (value != FlagValue.TRUE && reset) {
+                value = currentStyle.getFlag(flagKey);
+            }
+            if (value == FlagValue.TRUE) {
+                flags.put(flagKey, FlagValue.TRUE);
+                target.append('§').append(FLAGS_REVERSE[flagKey.ordinal()]);
+            }
+        }
+
+        if (bc.getValue() instanceof StringComponentValue) {
+            target.append(((StringComponentValue) bc.getValue()).getValue());
+        }
+
+        Style newStyle = new Style(flags, newColor);
+
+        for (Component child : bc.children) {
+            newStyle = toLegacy(child, newStyle, target);
+        }
+
+        return newStyle;
     }
 }
