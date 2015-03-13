@@ -10,10 +10,12 @@ import at.yawk.mcomponent.StringComponent;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import lombok.Value;
 
 /**
  * @author yawkat
  */
+@Value
 public class BaseEvent implements Event {
     private final Type type;
     private final Action action;
@@ -24,14 +26,6 @@ public class BaseEvent implements Event {
 
         validateActionType();
         validateActionValue();
-    }
-
-    public Type getType() {
-        return type;
-    }
-
-    public Action getAction() {
-        return action;
     }
 
     private void validateActionType() {

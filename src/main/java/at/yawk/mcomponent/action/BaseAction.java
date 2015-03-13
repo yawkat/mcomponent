@@ -7,54 +7,15 @@
 package at.yawk.mcomponent.action;
 
 import at.yawk.mcomponent.Component;
+import lombok.Value;
 
 /**
  * @author yawkat
  */
+@Value
 public class BaseAction implements Action {
     private final Type type;
     private final Component value;
-
-    public BaseAction(Type type, Component value) {
-        this.type = type;
-        this.value = value;
-    }
-
-    public Type getType() {
-        return type;
-    }
-
-    public Component getValue() {
-        return value;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        BaseAction that = (BaseAction) o;
-
-        if (type != that.type) {
-            return false;
-        }
-        if (!value.equals(that.value)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = type.hashCode();
-        result = 31 * result + value.hashCode();
-        return result;
-    }
 
     @Override
     public String toString() {

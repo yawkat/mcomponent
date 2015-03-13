@@ -12,12 +12,9 @@ import at.yawk.mcomponent.action.BaseEvent;
 import at.yawk.mcomponent.action.Event;
 import at.yawk.mcomponent.style.Style;
 import at.yawk.mcomponent.style.StyleOperations;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -32,21 +29,14 @@ public final class ComponentMinimizer {
     }
 
     public Component minimize(Component component) {
-        // try minimize(BaseComponent) for BaseComponents or .minify for others
-        while (true) {
-            if (component instanceof BaseComponent) {
-                return minimize((BaseComponent) component);
-            }
-            Component next = component.minify();
-            if (next == component) {
-                return component;
-            }
-            component = next;
+        if (component instanceof BaseComponent) {
+            return minimize((BaseComponent) component);
         }
+        return component;
     }
 
     public BaseComponent minimize(BaseComponent component) {
-        component = mutableCopy(component);
+        //noinspection StatementWithEmptyBody
         while (pass(component)) {}
         return component;
     }
@@ -73,7 +63,7 @@ public final class ComponentMinimizer {
         boolean modified = modifiedAtom.get();
         for (int i = 0; i < component.children.size(); i++) {
             Component child = component.children.get(i);
-            Component min = child.minify();
+            Component min = minifyBasic(child);
             if (child != min) {
                 modified = true;
                 component.children.set(i, min);
@@ -85,15 +75,6 @@ public final class ComponentMinimizer {
         modified |= passJoin(component.children);
         modified |= passOptimizeActions(component);
         return modified;
-    }
-
-    private BaseComponent mutableCopy(BaseComponent of) {
-        BaseComponent c = new BaseComponent();
-        c.value = of.value;
-        c.style = of.style;
-        c.events = Sets.newHashSet(of.events);
-        c.children = Lists.newArrayList(of.children);
-        return c;
     }
 
     private boolean passSingleValueFlatten(BaseComponent of) {
@@ -146,9 +127,9 @@ public final class ComponentMinimizer {
         while (i < components.size() - 1) {
             Component a = components.get(i);
             Component b = components.get(i + 1);
-            Optional<Component> joined = a.tryJoin(b);
-            if (joined.isPresent()) {
-                components.set(i, joined.get());
+            Component joined = tryJoin(a, b);
+            if (joined != null) {
+                components.set(i, joined);
                 components.remove(i + 1);
                 modified = true;
                 if (i > 0) {
@@ -231,5 +212,51 @@ public final class ComponentMinimizer {
 
     private Style getStyle(Component component) {
         return component instanceof BaseComponent ? ((BaseComponent) component).style : Style.INHERIT;
+    }
+
+    private Component tryJoin(Component a, Component b) {
+        if (a instanceof StringComponent) {
+            if (b instanceof StringComponent) {
+                return new StringComponent(((StringComponent) a).getValue() +
+                                           ((StringComponent) b).getValue());
+            }
+        } else if (a instanceof BaseComponent) {
+            if (b instanceof BaseComponent) {
+                BaseComponent we = (BaseComponent) a;
+                BaseComponent them = (BaseComponent) b;
+
+                if (we.style.equals(them.getStyle()) &&
+                    we.children.isEmpty() &&
+                    them.getChildren().isEmpty() &&
+                    we.events.equals(((BaseComponent) them.events).getEvents())) {
+                    ComponentValue value = tryJoin(we.value, them.value);
+                    if (value != null) {
+                        return new BaseComponent(value, new ArrayList<>(), we.style, we.events);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private ComponentValue tryJoin(ComponentValue a, ComponentValue b) {
+        if (a instanceof StringComponentValue && b instanceof StringComponentValue) {
+            return new StringComponentValue(((StringComponentValue) a).getValue() +
+                                            ((StringComponentValue) b).getValue());
+        }
+        return null;
+    }
+
+    private Component minifyBasic(Component component) {
+        if (component instanceof BaseComponent) {
+            BaseComponent bc = (BaseComponent) component;
+            if (bc.children.isEmpty()
+                && bc.value instanceof StringComponentValue
+                && bc.style.equals(Style.INHERIT)
+                && bc.events.isEmpty()) {
+                return new StringComponent(((StringComponentValue) bc.value).getValue());
+            }
+        }
+        return component;
     }
 }

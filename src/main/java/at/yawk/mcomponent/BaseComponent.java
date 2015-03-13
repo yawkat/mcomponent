@@ -8,20 +8,22 @@ package at.yawk.mcomponent;
 
 import at.yawk.mcomponent.action.Event;
 import at.yawk.mcomponent.style.Style;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 /**
  * @author yawkat
  */
+@Getter
+@EqualsAndHashCode
 public class BaseComponent implements Component {
     // mutable for internal use in ComponentMinimizer
 
@@ -34,37 +36,21 @@ public class BaseComponent implements Component {
 
     public BaseComponent(ComponentValue value, List<Component> children, Style style, Set<Event> events) {
         this.value = value;
-        this.events = ImmutableSet.copyOf(events);
-        this.children = ImmutableList.copyOf(children);
+        this.events = events;
+        this.children = children;
         this.style = style;
     }
 
     public BaseComponent(ComponentValue value, Style style) {
-        this(value, Collections.emptyList(), style, Collections.emptySet());
+        this(value, new ArrayList<>(), style, new HashSet<>());
     }
 
     public BaseComponent(ComponentValue value, List<Component> children) {
-        this(value, children, Style.INHERIT, Collections.emptySet());
+        this(value, children, Style.INHERIT, new HashSet<>());
     }
 
     public BaseComponent(ComponentValue value) {
-        this(value, Collections.emptyList());
-    }
-
-    public ComponentValue getValue() {
-        return value;
-    }
-
-    public List<Component> getChildren() {
-        return Collections.unmodifiableList(children);
-    }
-
-    public Style getStyle() {
-        return style;
-    }
-
-    public Set<Event> getEvents() {
-        return Collections.unmodifiableSet(events);
+        this(value, new ArrayList<>());
     }
 
     @Override
@@ -82,35 +68,8 @@ public class BaseComponent implements Component {
     }
 
     @Override
-    public Component minify() {
-        if (children.isEmpty()
-            && value instanceof StringComponentValue
-            && style.equals(Style.INHERIT)
-            && events.isEmpty()) {
-            return new StringComponent(((StringComponentValue) value).getValue());
-        }
-        return this;
-    }
-
-    @Override
     public boolean isEmpty() {
         return value.isEmpty();
-    }
-
-    @Override
-    public Optional<Component> tryJoin(Component other) {
-        if (other instanceof BaseComponent) {
-            if (style.equals(((BaseComponent) other).getStyle()) &&
-                children.isEmpty() &&
-                ((BaseComponent) other).getChildren().isEmpty() &&
-                events.equals(((BaseComponent) other).getEvents())) {
-                Optional<ComponentValue> value = getValue().tryJoin(((BaseComponent) other).getValue());
-                if (value.isPresent()) {
-                    return Optional.of(new BaseComponent(value.get(), Collections.emptyList(), style, events));
-                }
-            }
-        }
-        return Optional.empty();
     }
 
     @Override
@@ -149,42 +108,6 @@ public class BaseComponent implements Component {
             event.write(writer);
         }
         writer.endObject();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        BaseComponent that = (BaseComponent) o;
-
-        if (!events.equals(that.events)) {
-            return false;
-        }
-        if (!children.equals(that.children)) {
-            return false;
-        }
-        if (!style.equals(that.style)) {
-            return false;
-        }
-        if (!value.equals(that.value)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = value.hashCode();
-        result = 31 * result + children.hashCode();
-        result = 31 * result + style.hashCode();
-        result = 31 * result + events.hashCode();
-        return result;
     }
 
     @Override

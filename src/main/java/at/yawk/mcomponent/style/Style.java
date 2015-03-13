@@ -13,10 +13,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.*;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author yawkat
  */
+@EqualsAndHashCode
 public class Style implements JsonSerializable {
     public static final Style DEFAULT;
     public static final Style INHERIT = new Style(Color.INHERIT);
@@ -94,41 +96,5 @@ public class Style implements JsonSerializable {
             writer.name("color");
             writer.value(color.getName().get());
         }
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        Style style = (Style) o;
-
-        if (color != style.color) {
-            return false;
-        }
-        if (!flags.equals(style.flags)) {
-            return false;
-        }
-        for (FlagKey key : FlagKey.values()) {
-            if (getFlag(key) != style.getFlag(key)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = 0;
-        for (FlagKey key : FlagKey.values()) {
-            result = 31 * result + getFlag(key).hashCode();
-        }
-        result = 31 * result + color.hashCode();
-        return result;
     }
 }
