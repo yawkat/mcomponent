@@ -17,9 +17,27 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author yawkat
  */
-class ComponentMinimizer {
+public final class ComponentMinimizer {
     private static final Style baseStyle = Style.DEFAULT;
     static final ComponentMinimizer instance = new ComponentMinimizer();
+
+    public static ComponentMinimizer getInstance() {
+        return instance;
+    }
+
+    public Component minimize(Component component) {
+        // try minimize(BaseComponent) for BaseComponents or .minify for others
+        while (true) {
+            if (component instanceof BaseComponent) {
+                return minimize((BaseComponent) component);
+            }
+            Component next = component.minify();
+            if (next == component) {
+                return component;
+            }
+            component = next;
+        }
+    }
 
     public BaseComponent minimize(BaseComponent component) {
         component = mutableCopy(component);
@@ -207,13 +225,5 @@ class ComponentMinimizer {
 
     private Style getStyle(Component component) {
         return component instanceof BaseComponent ? ((BaseComponent) component).style : Style.INHERIT;
-    }
-
-    private Component minify(Component component) {
-        return component.minify();
-    }
-
-    private boolean isEmpty(ComponentValue value) {
-        return value instanceof StringComponentValue && ((StringComponentValue) value).getValue().isEmpty();
     }
 }
