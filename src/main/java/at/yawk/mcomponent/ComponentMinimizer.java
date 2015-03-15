@@ -84,6 +84,7 @@ public final class ComponentMinimizer {
                 of.children = ((BaseComponent) onlyChild).children;
                 of.value = ((BaseComponent) onlyChild).value;
                 of.events.addAll(((BaseComponent) onlyChild).events);
+                of.style = StyleOperations.inherit(((BaseComponent) onlyChild).style, of.style);
                 return true;
             }
         }
