@@ -12,7 +12,10 @@ import com.google.common.collect.Maps;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
 import lombok.EqualsAndHashCode;
 
 /**
@@ -96,5 +99,12 @@ public class Style implements JsonSerializable {
             writer.name("color");
             writer.value(color.getName().get());
         }
+    }
+
+    @Override
+    public String toString() {
+        JsonObject jo = new JsonObject();
+        applyToJson(jo);
+        return "Style" + jo;
     }
 }

@@ -69,7 +69,7 @@ public class BaseComponent implements Component {
 
     @Override
     public boolean isEmpty() {
-        return value.isEmpty();
+        return value.isEmpty() && children.stream().allMatch(Component::isEmpty);
     }
 
     @Override
@@ -96,6 +96,9 @@ public class BaseComponent implements Component {
         writer.beginObject();
         value.write(writer);
         style.write(writer);
+        for (Event event : events) {
+            event.write(writer);
+        }
         if (!children.isEmpty()) {
             writer.name("extra");
             writer.beginArray();
@@ -103,9 +106,6 @@ public class BaseComponent implements Component {
                 child.write(writer);
             }
             writer.endArray();
-        }
-        for (Event event : events) {
-            event.write(writer);
         }
         writer.endObject();
     }

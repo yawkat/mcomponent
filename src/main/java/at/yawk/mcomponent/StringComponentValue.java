@@ -20,7 +20,9 @@ public class StringComponentValue implements ComponentValue {
 
     @Override
     public void applyToJson(JsonObject target) {
-        target.addProperty("text", getValue());
+        if (!value.isEmpty()) {
+            target.addProperty("text", getValue());
+        }
     }
 
     @Override
