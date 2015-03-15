@@ -64,7 +64,7 @@ public class LegacyConverter {
 
     private LegacyConverter() {}
 
-    public static BaseComponent convertAndMinimize(CharSequence sequence) {
+    public static Component convertAndMinimize(CharSequence sequence) {
         return instance.convertMin(sequence);
     }
 
@@ -72,9 +72,9 @@ public class LegacyConverter {
         return instance.convert0(sequence);
     }
 
-    private BaseComponent convertMin(CharSequence sequence) {
+    private Component convertMin(CharSequence sequence) {
         BaseComponent converted = convert0(sequence);
-        return ComponentMinimizer.instance.minimize(converted);
+        return ComponentMinimizer.minimizeOne(converted);
     }
 
     private BaseComponent convert0(CharSequence sequence) {

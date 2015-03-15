@@ -12,252 +12,202 @@ import at.yawk.mcomponent.action.BaseEvent;
 import at.yawk.mcomponent.action.Event;
 import at.yawk.mcomponent.style.Style;
 import at.yawk.mcomponent.style.StyleOperations;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * @author yawkat
  */
-public final class ComponentMinimizer {
-    private static final Style baseStyle = Style.DEFAULT;
-    static final ComponentMinimizer instance = new ComponentMinimizer();
+public class ComponentMinimizer {
+    private static final boolean debug =
+            Boolean.getBoolean(ComponentMinimizer.class.getName() + ".debug");
+    private static int depth = 0;
 
-    public static ComponentMinimizer getInstance() {
-        return instance;
-    }
-
-    public Component minimize(Component component) {
-        if (component instanceof BaseComponent) {
-            return minimize((BaseComponent) component);
+    private static void enter(int d) {
+        if (debug) {
+            depth += d;
         }
-        return component;
     }
 
-    public BaseComponent minimize(BaseComponent component) {
-        //noinspection StatementWithEmptyBody
-        while (pass(component)) {}
-        return component;
-    }
-
-    private boolean pass(BaseComponent component) {
-        boolean modified = false;
-        while (independentPass(component)) {
-            modified = true;
-        }
-        modified |= passEscalateColorDeep(component);
-        modified |= passEscalateFirstDeep(component);
-        if (modified) {
-            passInheritStyleDeep(baseStyle, component);
-            return true;
-        }
-        return false;
-    }
-
-    private boolean independentPass(BaseComponent component) {
-        AtomicBoolean modifiedAtom = new AtomicBoolean(false);
-        component.children.parallelStream()
-                .filter(c -> c instanceof BaseComponent)
-                .forEach(c -> modifiedAtom.compareAndSet(false, independentPass((BaseComponent) c)));
-        boolean modified = modifiedAtom.get();
-        for (int i = 0; i < component.children.size(); i++) {
-            Component child = component.children.get(i);
-            Component min = minifyBasic(child);
-            if (child != min) {
-                modified = true;
-                component.children.set(i, min);
+    private static void log(int point, Object state) {
+        if (debug) {
+            for (int i = 0; i < depth; i++) {
+                System.out.print("  ");
             }
+            System.out.printf("%2d %s%n", point, state);
         }
-        modified |= passSingleValueFlatten(component);
-        modified |= passStringFlatten(component);
-        modified |= passRemoveEmpty(component.children);
-        modified |= passJoin(component.children);
-        modified |= passOptimizeActions(component);
-        return modified;
     }
 
-    private boolean passSingleValueFlatten(BaseComponent of) {
-        if (of.value.isEmpty() && of.children.size() == 1) {
-            Component onlyChild = of.children.get(0);
-            if (onlyChild instanceof BaseComponent) {
-                of.children = ((BaseComponent) onlyChild).children;
-                of.value = ((BaseComponent) onlyChild).value;
-                of.events.addAll(((BaseComponent) onlyChild).events);
-                of.style = StyleOperations.inherit(((BaseComponent) onlyChild).style, of.style);
-                return true;
-            }
-        }
-        return false;
+    private ComponentMinimizer() {}
+
+    public static Component minimizeOne(Component component) {
+        return minimize0(component);
     }
 
-    private boolean passInheritStyleDeep(Style parent, BaseComponent component) {
-        Style newStyle = StyleOperations.removeMatching(component.style, parent);
-        boolean modified = !component.style.equals(newStyle);
-        component.style = newStyle;
-        Style combined = null;
-        for (Component child : component.children) {
-            if (child instanceof BaseComponent) {
-                if (combined == null) {
-                    combined = StyleOperations.inherit(component.style, parent);
-                }
-                modified |= passInheritStyleDeep(combined, (BaseComponent) child);
-            }
+    public static List<Component> minimize(Component component) {
+        Component min = minimize0(component);
+        if (min instanceof BaseComponent &&
+            ((BaseComponent) min).value.isEmpty() &&
+            !hasStyle((BaseComponent) min)) {
+            return ((BaseComponent) min).children;
+        } else {
+            return Collections.singletonList(min);
         }
-        return modified;
     }
 
-    private boolean passStringFlatten(BaseComponent component) {
-        while (!component.children.isEmpty()) {
-            Component firstChild = component.children.get(0);
-            if (firstChild instanceof StringComponent &&
-                component.value instanceof StringComponentValue) {
-                component.children.remove(0);
-                component.value = new StringComponentValue(((StringComponentValue) component.value).getValue() +
-                                                           ((StringComponent) firstChild).getValue());
-            } else {
-                return false;
-            }
+    private static Component minimize0(Component c) {
+        if (c instanceof BaseComponent) {
+            enter(1);
+            Component then = pass((BaseComponent) c);
+            log(11, then);
+            enter(-1);
+            return then;
         }
-        return false;
+        return c;
     }
 
-    private boolean passJoin(List<Component> components) {
-        boolean modified = false;
-        int i = 0;
-        while (i < components.size() - 1) {
-            Component a = components.get(i);
-            Component b = components.get(i + 1);
-            Component joined = tryJoin(a, b);
-            if (joined != null) {
-                components.set(i, joined);
-                components.remove(i + 1);
-                modified = true;
-                if (i > 0) {
-                    i--;
-                }
-            } else {
-                i++;
-            }
-        }
-        return modified;
-    }
-
-    private boolean passRemoveEmpty(List<? extends Component> components) {
-        boolean modified = false;
-        for (Iterator<? extends Component> iterator = components.iterator(); iterator.hasNext(); ) {
-            Component component = iterator.next();
-            if (component.isEmpty()) {
-                modified = true;
-                iterator.remove();
-            }
-        }
-        return modified;
-    }
-
-    private boolean passOptimizeActions(BaseComponent component) {
-        boolean modified = false;
-        for (Event event : new ArrayList<>(component.events)) {
+    private static Component pass(BaseComponent bc) {
+        log(0, bc);
+        Set<Event> events = new HashSet<>();
+        for (Event event : bc.events) {
             if (event instanceof BaseEvent) {
                 Action action = ((BaseEvent) event).getAction();
                 if (action instanceof BaseAction) {
-                    Component val = ((BaseAction) action).getValue();
-                    if (val instanceof BaseComponent) {
-                        BaseComponent minimized = minimize((BaseComponent) val);
-                        if (!minimized.equals(val)) {
-                            component.events.remove(event);
-                            component.events.add(new BaseEvent(((BaseEvent) event).getType(),
-                                                               new BaseAction(((BaseAction) action).getType(),
-                                                                              minimized)));
-                            modified = true;
-                        }
-                    }
+                    event = new BaseEvent(
+                            ((BaseEvent) event).getType(),
+                            new BaseAction(
+                                    ((BaseAction) action).getType(),
+                                    minimize0(((BaseAction) action).getValue())
+                            )
+                    );
                 }
             }
+            events.add(event);
         }
-        return modified;
-    }
+        bc.events = events;
+        log(1, bc);
 
-    private boolean passEscalateFirstDeep(BaseComponent component) {
-        component.children.parallelStream()
-                .filter(c -> c instanceof BaseComponent)
-                .forEach(c -> passEscalateFirstDeep((BaseComponent) c));
-        if (!component.children.isEmpty() && component.value.isEmpty()) {
-            Component first = component.children.get(0);
+        passList(bc.children);
+        log(2, bc);
+
+        if (bc.value.isEmpty() && !bc.children.isEmpty()) {
+            Component first = bc.children.get(0);
             if (first instanceof StringComponent) {
-                component.children.remove(0);
-                component.value = new StringComponentValue(((StringComponent) first).getValue());
-                return true;
+                bc.value = new StringComponentValue(((StringComponent) first).getValue());
+                bc.children.clear();
             }
         }
-        return false;
-    }
+        log(3, bc);
 
-    private boolean passEscalateColorDeep(BaseComponent component) {
-        component.children.parallelStream()
-                .filter(c -> c instanceof BaseComponent)
-                .forEach(c -> passEscalateColorDeep((BaseComponent) c));
-        if (!component.children.isEmpty() && component.value.isEmpty()) {
-            Style common = getStyle(component.children.get(0));
-            for (int i = 1; i < component.children.size(); i++) {
-                common = StyleOperations.overridden(getStyle(component.children.get(i)), common);
-            }
-            common = StyleOperations.inherit(common, component.style);
-            if (!component.style.equals(common)) {
-                component.style = common;
-                return true;
+        if (!bc.children.isEmpty() &&
+            bc.value instanceof StringComponentValue) {
+            Component first = bc.children.get(0);
+            if (first instanceof StringComponent) {
+                // we merge into the child here instead of the value so that we can
+                // reduce this component to an array if its at the root.
+                bc.value = ComponentValue.EMPTY;
+                bc.children.set(0, new StringComponent(
+                        ((StringComponentValue) bc.value).getValue() +
+                        ((StringComponent) first).getValue()
+                ));
             }
         }
-        return false;
+        log(4, bc);
+
+        if (bc.children.isEmpty() && !hasStyle(bc)) {
+            log(6, bc.value);
+            return toComponent(bc.value);
+        }
+        if (bc.value.isEmpty() &&
+            bc.children.size() == 1) {
+            Component child = bc.children.get(0);
+            if (!hasStyle(bc)) {
+                return child;
+            }
+            if (child instanceof BaseComponent) {
+                ((BaseComponent) child).style = StyleOperations.inherit(((BaseComponent) child).style, bc.style);
+                return child;
+            }
+            if (child instanceof StringComponent) {
+                bc.value = new StringComponentValue(((StringComponent) child).getValue());
+                bc.children.clear();
+            }
+        }
+        log(5, bc);
+        return bc;
     }
 
-    private Style getStyle(Component component) {
-        return component instanceof BaseComponent ? ((BaseComponent) component).style : Style.INHERIT;
+    private static boolean hasStyle(BaseComponent bc) {
+        return !bc.style.equals(Style.INHERIT) || !bc.events.isEmpty();
     }
 
-    private Component tryJoin(Component a, Component b) {
-        if (a instanceof StringComponent) {
-            if (b instanceof StringComponent) {
-                return new StringComponent(((StringComponent) a).getValue() +
-                                           ((StringComponent) b).getValue());
+    private static void passList(List<Component> l) {
+        enter(1);
+        log(7, l);
+        for (int i = 0; i < l.size(); i++) {
+            Component child = l.get(i);
+            Component minimized = minimize0(child);
+            if (child != minimized) {
+                l.set(i, minimized);
             }
-        } else if (a instanceof BaseComponent) {
-            if (b instanceof BaseComponent) {
-                BaseComponent we = (BaseComponent) a;
-                BaseComponent them = (BaseComponent) b;
+        }
+        log(8, l);
 
-                if (we.style.equals(them.getStyle()) &&
-                    we.children.isEmpty() &&
-                    them.getChildren().isEmpty() &&
-                    we.events.equals(((BaseComponent) them.events).getEvents())) {
-                    ComponentValue value = tryJoin(we.value, them.value);
-                    if (value != null) {
-                        return new BaseComponent(value, new ArrayList<>(), we.style, we.events);
-                    }
-                }
+        for (int i = 0; i < l.size() - 1; i++) {
+            Component a = l.get(i);
+
+            if (a.isEmpty()) {
+                l.remove(i);
+                i--;
+                continue;
             }
+
+            Component b = l.get(i + 1);
+            Component merged = merge(a, b);
+            if (merged != null) {
+                merged = minimize0(merged);
+
+                l.set(i, merged);
+                l.remove(i + 1);
+                // merge next too
+                i--;
+            }
+        }
+        log(9, l);
+        // remove empty trailing elements
+        if (!l.isEmpty() && l.get(l.size() - 1).isEmpty()) {
+            l.remove(l.size() - 1);
+        }
+        log(10, l);
+        enter(-1);
+    }
+
+    @Nullable
+    private static Component merge(Component a, Component b) {
+        if (a instanceof StringComponent &&
+            b instanceof StringComponent) {
+            return new StringComponent(((StringComponent) a).getValue() + ((StringComponent) b).getValue());
+        }
+        if (a instanceof BaseComponent &&
+            b instanceof BaseComponent &&
+            ((BaseComponent) a).style.equals(((BaseComponent) b).style) &&
+            ((BaseComponent) a).events.equals(((BaseComponent) b).events)) {
+
+            // merge b into a
+            ((BaseComponent) a).children.add(toComponent(((BaseComponent) b).value));
+            ((BaseComponent) a).children.addAll(((BaseComponent) b).children);
+            return a;
         }
         return null;
     }
 
-    private ComponentValue tryJoin(ComponentValue a, ComponentValue b) {
-        if (a instanceof StringComponentValue && b instanceof StringComponentValue) {
-            return new StringComponentValue(((StringComponentValue) a).getValue() +
-                                            ((StringComponentValue) b).getValue());
+    private static Component toComponent(ComponentValue value) {
+        if (value instanceof StringComponentValue) {
+            return new StringComponent(((StringComponentValue) value).getValue());
         }
-        return null;
-    }
-
-    private Component minifyBasic(Component component) {
-        if (component instanceof BaseComponent) {
-            BaseComponent bc = (BaseComponent) component;
-            if (bc.children.isEmpty()
-                && bc.value instanceof StringComponentValue
-                && bc.style.equals(Style.INHERIT)
-                && bc.events.isEmpty()) {
-                return new StringComponent(((StringComponentValue) bc.value).getValue());
-            }
-        }
-        return component;
+        return new BaseComponent(value);
     }
 }

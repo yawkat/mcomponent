@@ -21,15 +21,15 @@ import static org.junit.Assert.assertEquals;
 public class LegacyConverterTest {
     @Test
     public void testLegacyConvertBase() {
-        assertEquals("{\"text\":\"Hi there \",\"extra\":[{\"text\":\"mate\",\"bold\":true,\"color\":\"blue\"},\"!\"]," +
-                     "\"color\":\"red\"}",
+        assertEquals("{\"extra\":[{\"text\":\"Hi there \",\"color\":\"red\"},{\"text\":\"mate\",\"bold\":true," +
+                     "\"color\":\"blue\"},{\"text\":\"!\",\"color\":\"red\"}]}",
                      LegacyConverter.convertAndMinimize("§cHi there §9§lmate§c!").toString());
     }
 
     @Test
     public void testLegacyConvertLink() {
-        assertEquals("{\"text\":\"\",\"extra\":[{\"text\":\"Website: \",\"bold\":true},{\"text\":\"yawk.at\"," +
-                     "\"clickEvent\":{\"action\":\"open_url\",\"value\":\"http://yawk.at\"}}],\"color\":\"blue\"}",
+        assertEquals("{\"extra\":[{\"text\":\"Website: \",\"bold\":true,\"color\":\"blue\"},{\"text\":\"yawk.at\"," +
+                     "\"color\":\"blue\",\"clickEvent\":{\"action\":\"open_url\",\"value\":\"http://yawk.at\"}}]}",
                      LegacyConverter.convertAndMinimize("§9§lWebsite: §9yawk.at").toString());
     }
 
