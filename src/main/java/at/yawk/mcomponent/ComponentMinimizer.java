@@ -129,6 +129,8 @@ public class ComponentMinimizer {
             }
             if (child instanceof BaseComponent) {
                 ((BaseComponent) child).style = StyleOperations.inherit(((BaseComponent) child).style, bc.style);
+                // add events to child
+                addEvents(((BaseComponent) child).events, bc.events);
                 return child;
             }
             if (child instanceof StringComponent) {
@@ -138,6 +140,25 @@ public class ComponentMinimizer {
         }
         log(5, bc);
         return bc;
+    }
+
+    /**
+     * Add all events from <code>from</code> to <code>to</code> if there isn't an event of the same type already
+     * present.
+     */
+    private static void addEvents(Set<Event> to, Set<Event> from) {
+        outer:
+        for (Event event : from) {
+            if (event instanceof BaseEvent) {
+                for (Event other : to) {
+                    if (other instanceof BaseEvent &&
+                        ((BaseEvent) other).getType() == ((BaseEvent) event).getType()) {
+                        continue outer;
+                    }
+                }
+            }
+            to.add(event);
+        }
     }
 
     private static boolean hasStyle(BaseComponent bc) {
