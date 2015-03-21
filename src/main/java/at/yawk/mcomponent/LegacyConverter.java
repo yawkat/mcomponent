@@ -24,7 +24,6 @@ public class LegacyConverter {
     private static final Color[] COLORS = new Color[COLOR_CACHE_SIZE];
     private static final char[] COLORS_REVERSE = new char[Color.values().length];
     private static final char[] FLAGS_REVERSE = new char[FlagKey.values().length];
-    private static final LegacyConverter instance = new LegacyConverter();
 
     static {
         COLORS['0'] = Color.BLACK;
@@ -65,19 +64,24 @@ public class LegacyConverter {
     private LegacyConverter() {}
 
     public static Component convertAndMinimize(CharSequence sequence) {
-        return instance.convertMin(sequence);
-    }
-
-    public static BaseComponent convert(CharSequence sequence) {
-        return instance.convert0(sequence);
-    }
-
-    private Component convertMin(CharSequence sequence) {
         BaseComponent converted = convert0(sequence);
         return ComponentMinimizer.minimizeOne(converted);
     }
 
-    private BaseComponent convert0(CharSequence sequence) {
+    public static BaseComponent convert(CharSequence sequence) {
+        return convert0(sequence);
+    }
+
+    public static Component convertUrls(CharSequence sequence) {
+        List<Component> components = new ArrayList<>();
+        Style style = Style.INHERIT;
+        appendStyledPart(components, new StringBuilder(sequence), style);
+        if (components.isEmpty()) { return new StringComponent(""); }
+        if (components.size() == 1) { return components.get(0); }
+        return new BaseComponent(ComponentValue.EMPTY, components);
+    }
+
+    private static BaseComponent convert0(CharSequence sequence) {
         List<Component> components = new ArrayList<>();
         StringBuilder part = new StringBuilder();
         Style style = Style.INHERIT;
@@ -114,7 +118,7 @@ public class LegacyConverter {
         return code < COLOR_CACHE_SIZE ? COLORS[code] : null;
     }
 
-    private void appendStyledPart(List<Component> components, StringBuilder part, Style style) {
+    private static void appendStyledPart(List<Component> components, StringBuilder part, Style style) {
         Matcher urlMatcher = URL.matcher(part);
         int x = 0;
         while (urlMatcher.find()) {
@@ -144,11 +148,11 @@ public class LegacyConverter {
     public static String toLegacyString(Component component) {
         StringBuilder builder = new StringBuilder();
         Style style = Style.DEFAULT;
-        instance.toLegacy(component, style, builder);
+        toLegacy(component, style, builder);
         return builder.toString();
     }
 
-    private Style toLegacy(Component component, Style currentStyle, StringBuilder target) {
+    private static Style toLegacy(Component component, Style currentStyle, StringBuilder target) {
         if (component instanceof StringComponent) {
             target.append(((StringComponent) component).getValue());
             return currentStyle;
