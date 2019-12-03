@@ -1,6 +1,6 @@
 name: Java CI
 
-on: [label]
+on: [create]
 
 jobs:
   build:
