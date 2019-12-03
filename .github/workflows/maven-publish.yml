@@ -19,9 +19,9 @@ jobs:
       uses: samuelmeuli/action-maven-publish@v1.0.0
       with:
         # GPG private key for signing the published artifacts
-        gpg_private_key: ${{ secrets.GPG_KEY }}
+        gpg_private_key: ${{ secrets.gpg_key }}
         # Passphrase for the GPG key
-        gpg_passphrase: ""
+        gpg_passphrase: ${{ secrets.gpg_password }}
         # Username (not email!) for your Nexus repository manager account
         nexus_username: yawkat
         # Password for your Nexus account
